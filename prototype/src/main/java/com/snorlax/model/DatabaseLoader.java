@@ -14,6 +14,7 @@ public class DatabaseLoader implements CommandLineRunner {
     this.repository = repository;
   }
 
+  // runs at the start of the application to pre-load the database
   @Override
   public void run(String... strings) throws Exception {
     this.repository.save(new Employee("Frodo", "Baggins", "ring bearer"));
