@@ -22,7 +22,7 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-    this.state = {employees: []};
+    this.state = {employees: [], ip: ""};
   }
 
   // 2 componentDidMount() is the API invoked after React renders a component
@@ -32,6 +32,16 @@ class App extends React.Component {
   // response <- getResponse("GET", "/api/employees")
   // employees .~ response.entity._embedded.employees
   componentDidMount() {
+    // get the IP from some shady website and save it to internal state
+    fetch("https://api.ipify.org?format=json")
+      .then(response => {
+        return response.json();
+      }, "jsonp")
+      .then(res => {
+        this.setState({ip: res.ip})
+      })
+      .catch(err => console.log(err));
+
     client({method: 'GET', path: '/api/employees'}).done(response => {
       this.setState({employees: response.entity._embedded.employees});
     });
@@ -40,9 +50,13 @@ class App extends React.Component {
   // Render is the API that "draws" the component on the screen
   // <EmployeeList /> component
   render() {
+    // You can return a text object for rendering a component in React
     return (
-      <EmployeeList employees={this.state.employees}/>
+      "Your IP: " + this.state.ip
     )
+    // return (
+    //   <EmployeeList employees={this.state.employees}/>
+    // )
   }
 }
 
