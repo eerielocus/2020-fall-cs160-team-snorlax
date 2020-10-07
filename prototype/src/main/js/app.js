@@ -41,21 +41,18 @@ class App extends React.Component {
     // root as the rootPath. In this case, our relationship array is
     // a single element that is a dictionary with employees as the
     // relation and includes params (size: pageSize)
+    // follow will return the json object associated with the relation that
+    // we asked for (employees).
     follow(client, root, [
       {rel: 'employees', params: {size: pageSize}}]
     ).then(employeeCollection => {
-      // It's obvoius enough that this code is getting the particular
-      // schema of this entity to save into memory, but I'm less certain
-      // about where exactly employeeCollection is coming from. I believe
-      // 'then' is JavaScript's version of the monadic bind operation,
-      // so employeeCollection seems to be coming out of a box from
-      // what is returned by follow, which is probably correct... I just
-      // don't know what is really being returned by follow. OKAY I looked
-      // up then and it is invoked by a Promise and returns a Promise,
+      // I believe 'then' is JavaScript's version of the monadic bind
+      // operation, so employeeCollection seems to be coming out of a box from
+      // what is returned by follow, which is probably correct...
+      // I looked it up, 'then' is invoked by a Promise and returns a Promise,
       // which fits the monadic bind pattern of M a -> (a -> M b) -> M b
       // I think the actual types would be something like
-      // Promise (employeeCollection) -> (employeeCollection ->
-      // Promise employeeCollection) -> Promise (employeeCollection)
+      // Promise JSON -> (JSON -> Promise JSON) -> Promise JSON
       return client({
         method: 'GET',
         path: employeeCollection.entity._links.profile.href,
@@ -65,8 +62,9 @@ class App extends React.Component {
         return employeeCollection;
       });
     }).done(employeeCollection => {
-      // I'm quite sure that done is part of the Promise module that
-      // specifies what to do when a Promise is completed.
+      // I'm quite sure that 'done' is part of the Promise module that
+      // specifies what to do when a Promise is completed (the difference with
+      // 'then' is that 'done' does not return a value (i.e. m ())).
       // Update our state in memory with the values that we found on the
       // server's employeeCollection.
       this.setState({
@@ -86,17 +84,13 @@ class App extends React.Component {
     }
   }
 
-  // What to do upon creation of a new employee (show that employee that was
-  // just added).
+  // What to do when creating a new employee (add it, then navigate to it)
   // I think the newEmployee passed in and the POST request
   // with the entity: newEmployee is adding the employee to the database
   // (the detail of this is taken care of by Spring Data REST, I'm sure).
   onCreate(newEmployee) {
-    // invoke follow on employees, then handle the POST response
-    // then follow again on employees with the correct pageSize (I think
-    // this re-renders the page, if I'm not mistaken, but maybe I am)
-    // then finish with navigation to the 'last' hypermedia control
-    // hey this stuff is getting easier to read
+    // Get the 'employees' JSON object, then add the newEmployee to it with
+    // a POST request and entity: newEmployee
     follow(client, root, ['employees']).then(employeeCollection => {
       return client({
         method: 'POST',
@@ -104,9 +98,12 @@ class App extends React.Component {
         entity: newEmployee,
         headers: {'Content-Type': 'application/json'}
       })
+    // reload the page with the appropriate page size and the new employee
     }).then(response => {
       return follow(client, root, [
         {rel: 'employees', params: {'size': this.state.pageSize}}]);
+    // navigate to the new employee (it will be the last entry, but if there is
+    // no 'last' key in _links, that means we're already at the last page).
     }).done(response => {
       if (typeof response.entity._links.last !== "undefined") {
         this.onNavigate(response.entity._links.last.href);
@@ -116,7 +113,8 @@ class App extends React.Component {
     });
   }
 
-  // What to do upon deletion of an employee
+  // What to do when deleting an employee (simply call DELETE on that
+  // employee's link)
   onDelete(employee) {
     client({method: 'DELETE', path: employee._links.self.href})
       .done(response => {
@@ -137,11 +135,6 @@ class App extends React.Component {
   }
 
   // 2 componentDidMount() is the API invoked after React renders a component
-  //
-  // Pretty sure this code is basically like this Haskell (pseudo) code,
-  // except the Haskell code is using a hypothetical getResponse method
-  // response <- getResponse("GET", "/api/employees")
-  // employees .~ response.entity._embedded.employees
   componentDidMount() {
     // get the IP from some shady website and save it to internal state
     fetch("https://api.ipify.org?format=json")
@@ -153,14 +146,11 @@ class App extends React.Component {
       })
       .catch(err => console.log(err));
 
-    // client({method: 'GET', path: '/api/employees'}).done(response => {
-    //   this.setState({employees: response.entity._embedded.employees});
-    // });
+    // load our internal state information from the server
     this.loadFromServer(this.state.pageSize);
   }
 
   // Render is the API that "draws" the component on the screen
-  // <EmployeeList /> component
   render() {
     return (
       <div>
@@ -202,13 +192,10 @@ class EmployeeList extends React.Component{
   // Handle the input of keystrokes to get the new pageSize. This handles
   // input on EACH character entered. If the character entered is a valid
   // digit, then let the <App /> knonw that there is a new pageSize. If it
-  // is not a digit, then strip that character from the input. My
-  // understanding is that, due to how React works, even though intermediate
-  // calls would be made to re-render the page every time a digit is entered,
-  // React will wait to do batch updates. So, for instance, if you attempt to
-  // modify the pageSize to be 42, it would say NEW PAGE SIZE: 4 as soon as
-  // 4 is entered, but then you enter 2 and it says NEW PAGE SIZE: 42, which
-  // is ultimately what is displayed.
+  // is not a digit, then strip that character from the input. Note that
+  // previous digits are still in the input, so if you enter 42, the pageSize
+  // will be updated to 4 once you enter it, then updated to 42 once you enter
+  // 2.
   handleInput(e) {
     e.preventDefault();
     const pageSize = ReactDOM.findDOMNode(this.refs.pageSize).value;
@@ -220,6 +207,8 @@ class EmployeeList extends React.Component{
     }
   }
 
+  // We create navigation buttons. These 4 functions handle what to do when
+  // the buttons are clicked.
   handleNavFirst(e){
     e.preventDefault();
     this.props.onNavigate(this.props.links.first.href);
@@ -267,7 +256,8 @@ class EmployeeList extends React.Component{
         <button key="last" onClick={this.handleNavLast}>&gt;&gt;</button>);
     }
 
-    // A table generated from {employees}
+    // At the top there is an input field for pageSize, if they want to change
+    // it. Then a table generated from {employees} with the {navLinks}
     // This is what is returned when an <EmployeeList /> component is rendered
     return (
       <div>
@@ -301,7 +291,8 @@ class Employee extends React.Component {
     this.handleDelete = this.handleDelete.bind(this);
   }
 
-  // this is for displaying a delete button next to the employee's information
+  // We display a delete button next to the employee's information. This
+  // function handles what to do when it's clicked.
   handleDelete() {
     this.props.onDelete(this.props.employee);
   }
@@ -339,16 +330,14 @@ class CreateDialog extends React.Component {
   }
 
   // Handle what to do when the submit button is clicked to add a new employee
-  // This code is called because the code returned in the render function
-  // as a <button onClick=handleSubmit> tag.
   // e is an event
   handleSubmit(e) {
     // prevent the event from bubbling up the hierarchy
     e.preventDefault();
 
     const newEmployee = {};
-    // find all input with this attribute and supply its value to
-    // newEmployee[attribute]
+    // for all attributes in employee, find the input associated with them
+    // (this.refs[attribute]) and collect the value into newEmployee[attribute]
     this.props.attributes.forEach(attribute => {
       newEmployee[attribute] =
         ReactDOM.findDOMNode(this.refs[attribute]).value.trim();

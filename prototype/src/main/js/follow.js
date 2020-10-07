@@ -31,14 +31,7 @@
 // we are done, so the follow function returns the json object that
 // traverseNext found.
 //
-// Unfortunately, the guide did not include much information about this
-// function. Clearly, the purpose is to be able to navigate links. I wish
-// I had more information about the sorts of things that the arguments are.
-// I've done the best I can to comment on what's going on in this funciton,
-// but I've received no help from the person who wrote the guide, so I may
-// have some things wrong.
-//
-// api -- like client, it can fetch information from the server
+// api -- the api that fetches information from the server (i.e. client object)
 // rootPath -- a path to the root (i.e. '/api')
 // relArray -- a relationship array; as an example, 'employees' is a
 // relationship that could be an item of this array. Because JavaScript is
@@ -52,18 +45,11 @@ module.exports = function follow(api, rootPath, relArray) {
     path: rootPath
   });
 
-  // equivalent Haskell pseudocode:
+  // equivalent Haskell:
   // foldl' traverseNext root relArray
-  // note here that 'root' in the anonymous function parameter is a HIGHLY
-  // misleading name. It's not the root, it's the accumulation so far. I'm
-  // not going to change this right now for fear of breaking something, but
-  // my examination of the code is such that it would be like doing
-  // foldl' (\root arrayItem -> traverseNext root rel arrayItem) root relArray
-  // (rel in the code above is hypothetical, since Haskell won't let you have
-  // something that "might be a string or might be a Map")
-  return relArray.reduce(function(root, arrayItem) {
+  return relArray.reduce(function(here, arrayItem) {
     const rel = typeof arrayItem === 'string' ? arrayItem : arrayItem.rel;
-    return traverseNext(root, rel, arrayItem);
+    return traverseNext(here, rel, arrayItem);
   }, root);
 
   // Note: while it may seem strange to have a folding function, which is what
@@ -73,18 +59,17 @@ module.exports = function follow(api, rootPath, relArray) {
   // In Haskell, you wouldn't (coudln't even) do something like that, you
   // would instead fold the "it might have params or not" into the type system
   // with a tuple (JSON, Maybe [Text]) or perhaps a Data type.
-  // Again, as noted above, "root" is a terrible name. It's more like "the
-  // JSON object of the relation you are working with".
-  // Also noted previously, the JSON object that this function is passed in
+  // noted previously, the JSON object that this function is passed in
   // and returns are actually wrapped in the Promise monad (I think), and I
-  // believe that doing root.then(...) is like doing root >>= \json -> (...)
+  // believe that doing here.then(...) is like doing here >>= \json -> (...)
   // in Haskell, or like doing json <- root in do notation.
   // The actual type of traverseNext is probably something like:
   // traverseNext :: Promise JSON -> Relation -> ArrayItem -> Promise JSON
+  // but for simplicity:
   // traverseNext :: JSON -> Relation -> ArrayItem -> JSON
-  function traverseNext (root, rel, arrayItem) {
-    return root.then(function (response) {
-      // if the entity has this relation, go there next (I think)
+  function traverseNext (here, rel, arrayItem) {
+    return here.then(function (response) {
+      // if the entity has this relation, go there next
       if (hasEmbeddedRel(response.entity, rel)) {
         return response.entity._embedded[rel];
       }
