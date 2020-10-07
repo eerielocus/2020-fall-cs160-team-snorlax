@@ -34104,7 +34104,11 @@ var React = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 
 var ReactDOM = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
 
-var client = __webpack_require__(/*! ./client */ "./src/main/js/client.js"); // 1 React.Component is one of the main building blocks of the React API
+var client = __webpack_require__(/*! ./client */ "./src/main/js/client.js");
+
+var follow = __webpack_require__(/*! ./follow */ "./src/main/js/follow.js");
+
+var root = '/api'; // 1 React.Component is one of the main building blocks of the React API
 // React components have two types of data - state and properties
 // State is the data that the component is expected to handle itself
 //   Read state from this.state
@@ -34119,7 +34123,6 @@ var client = __webpack_require__(/*! ./client */ "./src/main/js/client.js"); // 
 // change. To set them, you assign them to attributes when creating a new
 // component
 
-
 var App = /*#__PURE__*/function (_React$Component) {
   _inherits(App, _React$Component);
 
@@ -34132,72 +34135,343 @@ var App = /*#__PURE__*/function (_React$Component) {
 
     _this = _super.call(this, props);
     _this.state = {
-      employees: []
+      employees: [],
+      attributes: [],
+      pageSize: 2,
+      links: {},
+      ip: ""
     };
+    _this.updatePageSize = _this.updatePageSize.bind(_assertThisInitialized(_this));
+    _this.onCreate = _this.onCreate.bind(_assertThisInitialized(_this));
+    _this.onDelete = _this.onDelete.bind(_assertThisInitialized(_this));
+    _this.onNavigate = _this.onNavigate.bind(_assertThisInitialized(_this));
     return _this;
-  } // 2 componentDidMount() is the API invoked after React renders a component
-  //
-  // Pretty sure this code is basically like this Haskell (pseudo) code,
-  // except the Haskell code is using a hypothetical getResponse method
-  // response <- getResponse("GET", "/api/employees")
-  // employees .~ response.entity._embedded.employees
+  } // load information from the server into memory
+  // Loads employees, attributes, pageSize, and links, as well as schema
+  // information
 
 
   _createClass(App, [{
-    key: "componentDidMount",
-    value: function componentDidMount() {
+    key: "loadFromServer",
+    value: function loadFromServer(pageSize) {
       var _this2 = this;
+
+      // call follow, we would probably always use client as the api and
+      // root as the rootPath. In this case, our relationship array is
+      // a single element that is a dictionary with employees as the
+      // relation and includes params (size: pageSize)
+      follow(client, root, [{
+        rel: 'employees',
+        params: {
+          size: pageSize
+        }
+      }]).then(function (employeeCollection) {
+        // It's obvoius enough that this code is getting the particular
+        // schema of this entity to save into memory, but I'm less certain
+        // about where exactly employeeCollection is coming from. I believe
+        // 'then' is JavaScript's version of the monadic bind operation,
+        // so employeeCollection seems to be coming out of a box from
+        // what is returned by follow, which is probably correct... I just
+        // don't know what is really being returned by follow. OKAY I looked
+        // up then and it is invoked by a Promise and returns a Promise,
+        // which fits the monadic bind pattern of M a -> (a -> M b) -> M b
+        // I think the actual types would be something like
+        // Promise (employeeCollection) -> (employeeCollection ->
+        // Promise employeeCollection) -> Promise (employeeCollection)
+        return client({
+          method: 'GET',
+          path: employeeCollection.entity._links.profile.href,
+          headers: {
+            'Accept': 'application/schema+json'
+          }
+        }).then(function (schema) {
+          _this2.schema = schema.entity;
+          return employeeCollection;
+        });
+      }).done(function (employeeCollection) {
+        // I'm quite sure that done is part of the Promise module that
+        // specifies what to do when a Promise is completed.
+        // Update our state in memory with the values that we found on the
+        // server's employeeCollection.
+        _this2.setState({
+          employees: employeeCollection.entity._embedded.employees,
+          attributes: Object.keys(_this2.schema.properties),
+          pageSize: pageSize,
+          links: employeeCollection.entity._links
+        });
+      });
+    } // re-render the page with the new page size, if it is different.
+    // Because a new page size value causes changes to all the navigation links,
+    // it is best to refetch the data and start from the beginning
+
+  }, {
+    key: "updatePageSize",
+    value: function updatePageSize(pageSize) {
+      if (pageSize !== this.state.pageSize) {
+        this.loadFromServer(pageSize);
+      }
+    } // What to do upon creation of a new employee (show that employee that was
+    // just added).
+    // I think the newEmployee passed in and the POST request
+    // with the entity: newEmployee is adding the employee to the database
+    // (the detail of this is taken care of by Spring Data REST, I'm sure).
+
+  }, {
+    key: "onCreate",
+    value: function onCreate(newEmployee) {
+      var _this3 = this;
+
+      // invoke follow on employees, then handle the POST response
+      // then follow again on employees with the correct pageSize (I think
+      // this re-renders the page, if I'm not mistaken, but maybe I am)
+      // then finish with navigation to the 'last' hypermedia control
+      // hey this stuff is getting easier to read
+      follow(client, root, ['employees']).then(function (employeeCollection) {
+        return client({
+          method: 'POST',
+          path: employeeCollection.entity._links.self.href,
+          entity: newEmployee,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      }).then(function (response) {
+        return follow(client, root, [{
+          rel: 'employees',
+          params: {
+            'size': _this3.state.pageSize
+          }
+        }]);
+      }).done(function (response) {
+        if (typeof response.entity._links.last !== "undefined") {
+          _this3.onNavigate(response.entity._links.last.href);
+        } else {
+          _this3.onNavigate(response.entity._links.self.href);
+        }
+      });
+    } // What to do upon deletion of an employee
+
+  }, {
+    key: "onDelete",
+    value: function onDelete(employee) {
+      var _this4 = this;
+
+      client({
+        method: 'DELETE',
+        path: employee._links.self.href
+      }).done(function (response) {
+        _this4.loadFromServer(_this4.state.pageSize);
+      });
+    } // navigate with GET to the navUri, then update the state
+
+  }, {
+    key: "onNavigate",
+    value: function onNavigate(navUri) {
+      var _this5 = this;
 
       client({
         method: 'GET',
-        path: '/api/employees'
-      }).done(function (response) {
-        _this2.setState({
-          employees: response.entity._embedded.employees
+        path: navUri
+      }).done(function (employeeCollection) {
+        _this5.setState({
+          employees: employeeCollection.entity._embedded.employees,
+          attributes: _this5.state.attributes,
+          pageSize: _this5.state.pageSize,
+          links: employeeCollection.entity._links
         });
       });
+    } // 2 componentDidMount() is the API invoked after React renders a component
+    //
+    // Pretty sure this code is basically like this Haskell (pseudo) code,
+    // except the Haskell code is using a hypothetical getResponse method
+    // response <- getResponse("GET", "/api/employees")
+    // employees .~ response.entity._embedded.employees
+
+  }, {
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this6 = this;
+
+      // get the IP from some shady website and save it to internal state
+      fetch("https://api.ipify.org?format=json").then(function (response) {
+        return response.json();
+      }, "jsonp").then(function (res) {
+        _this6.setState({
+          ip: res.ip
+        });
+      })["catch"](function (err) {
+        return console.log(err);
+      }); // client({method: 'GET', path: '/api/employees'}).done(response => {
+      //   this.setState({employees: response.entity._embedded.employees});
+      // });
+
+      this.loadFromServer(this.state.pageSize);
     } // Render is the API that "draws" the component on the screen
     // <EmployeeList /> component
 
   }, {
     key: "render",
     value: function render() {
-      return /*#__PURE__*/React.createElement(EmployeeList, {
-        employees: this.state.employees
-      });
+      return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(DisplayIP, {
+        ip: this.state.ip
+      }), /*#__PURE__*/React.createElement(CreateDialog, {
+        attributes: this.state.attributes,
+        onCreate: this.onCreate
+      }), /*#__PURE__*/React.createElement(EmployeeList, {
+        employees: this.state.employees,
+        links: this.state.links,
+        pageSize: this.state.pageSize,
+        onNavigate: this.onNavigate,
+        onDelete: this.onDelete,
+        updatePageSize: this.updatePageSize
+      }));
     }
   }]);
 
   return App;
-}(React.Component); // Define <EmployeeList /> component
+}(React.Component); // Idk if there's a simpler way to do this, but this is just to display the
+// IP for the sake of example
 
 
-var EmployeeList = /*#__PURE__*/function (_React$Component2) {
-  _inherits(EmployeeList, _React$Component2);
+var DisplayIP = /*#__PURE__*/function (_React$Component2) {
+  _inherits(DisplayIP, _React$Component2);
 
-  var _super2 = _createSuper(EmployeeList);
+  var _super2 = _createSuper(DisplayIP);
 
-  function EmployeeList() {
-    _classCallCheck(this, EmployeeList);
+  function DisplayIP() {
+    _classCallCheck(this, DisplayIP);
 
     return _super2.apply(this, arguments);
   }
 
-  _createClass(EmployeeList, [{
+  _createClass(DisplayIP, [{
     key: "render",
     value: function render() {
+      return "Your IP: " + this.props.ip;
+    }
+  }]);
+
+  return DisplayIP;
+}(React.Component); // Define <EmployeeList /> component
+
+
+var EmployeeList = /*#__PURE__*/function (_React$Component3) {
+  _inherits(EmployeeList, _React$Component3);
+
+  var _super3 = _createSuper(EmployeeList);
+
+  function EmployeeList(props) {
+    var _this7;
+
+    _classCallCheck(this, EmployeeList);
+
+    _this7 = _super3.call(this, props);
+    _this7.handleInput = _this7.handleInput.bind(_assertThisInitialized(_this7));
+    _this7.handleNavFirst = _this7.handleNavFirst.bind(_assertThisInitialized(_this7));
+    _this7.handleNavPrev = _this7.handleNavPrev.bind(_assertThisInitialized(_this7));
+    _this7.handleNavNext = _this7.handleNavNext.bind(_assertThisInitialized(_this7));
+    _this7.handleNavLast = _this7.handleNavLast.bind(_assertThisInitialized(_this7));
+    return _this7;
+  } // Handle the input of keystrokes to get the new pageSize. This handles
+  // input on EACH character entered. If the character entered is a valid
+  // digit, then let the <App /> knonw that there is a new pageSize. If it
+  // is not a digit, then strip that character from the input. My
+  // understanding is that, due to how React works, even though intermediate
+  // calls would be made to re-render the page every time a digit is entered,
+  // React will wait to do batch updates. So, for instance, if you attempt to
+  // modify the pageSize to be 42, it would say NEW PAGE SIZE: 4 as soon as
+  // 4 is entered, but then you enter 2 and it says NEW PAGE SIZE: 42, which
+  // is ultimately what is displayed.
+
+
+  _createClass(EmployeeList, [{
+    key: "handleInput",
+    value: function handleInput(e) {
+      e.preventDefault();
+      var pageSize = ReactDOM.findDOMNode(this.refs.pageSize).value;
+
+      if (/^[0-9]+$/.test(pageSize)) {
+        this.props.updatePageSize(pageSize);
+      } else {
+        ReactDOM.findDOMNode(this.refs.pageSize).value = pageSize.substring(0, pageSize.length - 1);
+      }
+    }
+  }, {
+    key: "handleNavFirst",
+    value: function handleNavFirst(e) {
+      e.preventDefault();
+      this.props.onNavigate(this.props.links.first.href);
+    }
+  }, {
+    key: "handleNavPrev",
+    value: function handleNavPrev(e) {
+      e.preventDefault();
+      this.props.onNavigate(this.props.links.prev.href);
+    }
+  }, {
+    key: "handleNavNext",
+    value: function handleNavNext(e) {
+      e.preventDefault();
+      this.props.onNavigate(this.props.links.next.href);
+    }
+  }, {
+    key: "handleNavLast",
+    value: function handleNavLast(e) {
+      e.preventDefault();
+      this.props.onNavigate(this.props.links.last.href);
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var _this8 = this;
+
       // This mapping converts employees from an array of records into an array
       // of <Element /> React components
       var employees = this.props.employees.map(function (employee) {
         return /*#__PURE__*/React.createElement(Employee, {
           key: employee._links.self.href,
-          employee: employee
+          employee: employee,
+          onDelete: _this8.props.onDelete
         });
-      }); // This mumbo jumbo here is HTML, but it's pretty easy to see what's
-      // going on. It's making a table and populating it with employees
+      }); // create a list of navlinks buttons
+
+      var navLinks = [];
+
+      if ("first" in this.props.links) {
+        navLinks.push( /*#__PURE__*/React.createElement("button", {
+          key: "first",
+          onClick: this.handleNavFirst
+        }, "<<"));
+      }
+
+      if ("prev" in this.props.links) {
+        navLinks.push( /*#__PURE__*/React.createElement("button", {
+          key: "prev",
+          onClick: this.handleNavPrev
+        }, "<"));
+      }
+
+      if ("next" in this.props.links) {
+        navLinks.push( /*#__PURE__*/React.createElement("button", {
+          key: "next",
+          onClick: this.handleNavNext
+        }, ">"));
+      }
+
+      if ("last" in this.props.links) {
+        navLinks.push( /*#__PURE__*/React.createElement("button", {
+          key: "last",
+          onClick: this.handleNavLast
+        }, ">>"));
+      } // A table generated from {employees}
       // This is what is returned when an <EmployeeList /> component is rendered
 
-      return /*#__PURE__*/React.createElement("table", null, /*#__PURE__*/React.createElement("tbody", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "First Name"), /*#__PURE__*/React.createElement("th", null, "Last Name"), /*#__PURE__*/React.createElement("th", null, "Description")), employees));
+
+      return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("input", {
+        ref: "pageSize",
+        defaultValue: this.props.pageSize,
+        onInput: this.handleInput
+      }), /*#__PURE__*/React.createElement("table", null, /*#__PURE__*/React.createElement("tbody", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "First Name"), /*#__PURE__*/React.createElement("th", null, "Last Name"), /*#__PURE__*/React.createElement("th", null, "Description"), /*#__PURE__*/React.createElement("th", null)), employees)), /*#__PURE__*/React.createElement("div", null, navLinks));
     }
   }]);
 
@@ -34205,25 +34479,120 @@ var EmployeeList = /*#__PURE__*/function (_React$Component2) {
 }(React.Component); // Define <Employee /> component
 
 
-var Employee = /*#__PURE__*/function (_React$Component3) {
-  _inherits(Employee, _React$Component3);
+var Employee = /*#__PURE__*/function (_React$Component4) {
+  _inherits(Employee, _React$Component4);
 
-  var _super3 = _createSuper(Employee);
+  var _super4 = _createSuper(Employee);
 
-  function Employee() {
+  function Employee(props) {
+    var _this9;
+
     _classCallCheck(this, Employee);
 
-    return _super3.apply(this, arguments);
-  }
+    _this9 = _super4.call(this, props);
+    _this9.handleDelete = _this9.handleDelete.bind(_assertThisInitialized(_this9));
+    return _this9;
+  } // this is for displaying a delete button next to the employee's information
+
 
   _createClass(Employee, [{
+    key: "handleDelete",
+    value: function handleDelete() {
+      this.props.onDelete(this.props.employee);
+    }
+  }, {
     key: "render",
     value: function render() {
-      return /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", null, this.props.employee.firstName), /*#__PURE__*/React.createElement("td", null, this.props.employee.lastName), /*#__PURE__*/React.createElement("td", null, this.props.employee.description));
+      return /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", null, this.props.employee.firstName), /*#__PURE__*/React.createElement("td", null, this.props.employee.lastName), /*#__PURE__*/React.createElement("td", null, this.props.employee.description), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("button", {
+        onClick: this.handleDelete
+      }, "Delete")));
     }
   }]);
 
   return Employee;
+}(React.Component); // My best guess for what's goin on here:
+// In render, this function creates an <input> text element for each attribute
+// which asks the user to fill in the needed information for a new employee,
+// first name, last name, description. It creates a reference to that
+// information with the field in the input element ref={attribute}, which
+// allows that information to be searched with ReactDOM.findDOMNode (the
+// value to search for is this.refs[attribute], apparently where the ref gets
+// saved by React). We then have a button that calls handleSubmit, which
+// collects the information about each attribute entered by the user to
+// create newEmployee, then invokes this.props.onCreate(newEmployee), where
+// the employee is added to the database with a POST request to the server.
+
+
+var CreateDialog = /*#__PURE__*/function (_React$Component5) {
+  _inherits(CreateDialog, _React$Component5);
+
+  var _super5 = _createSuper(CreateDialog);
+
+  function CreateDialog(props) {
+    var _this10;
+
+    _classCallCheck(this, CreateDialog);
+
+    _this10 = _super5.call(this, props);
+    _this10.handleSubmit = _this10.handleSubmit.bind(_assertThisInitialized(_this10));
+    return _this10;
+  } // Handle what to do when the submit button is clicked to add a new employee
+  // This code is called because the code returned in the render function
+  // as a <button onClick=handleSubmit> tag.
+  // e is an event
+
+
+  _createClass(CreateDialog, [{
+    key: "handleSubmit",
+    value: function handleSubmit(e) {
+      var _this11 = this;
+
+      // prevent the event from bubbling up the hierarchy
+      e.preventDefault();
+      var newEmployee = {}; // find all input with this attribute and supply its value to
+      // newEmployee[attribute]
+
+      this.props.attributes.forEach(function (attribute) {
+        newEmployee[attribute] = ReactDOM.findDOMNode(_this11.refs[attribute]).value.trim();
+      }); // Invoke App.onCreate
+
+      this.props.onCreate(newEmployee); // clear out the dialog's inputs
+
+      this.props.attributes.forEach(function (attribute) {
+        ReactDOM.findDOMNode(_this11.refs[attribute]).value = '';
+      }); // Navigate away from the dialog to hide it.
+
+      window.location = "#";
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var inputs = this.props.attributes.map(function (attribute) {
+        return /*#__PURE__*/React.createElement("p", {
+          key: attribute
+        }, /*#__PURE__*/React.createElement("input", {
+          type: "text",
+          placeholder: attribute,
+          ref: attribute,
+          className: "field"
+        }));
+      });
+      return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("a", {
+        href: "#createEmployee"
+      }, "Create"), /*#__PURE__*/React.createElement("div", {
+        id: "createEmployee",
+        className: "modalDialog"
+      }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("a", {
+        href: "#",
+        title: "Close",
+        className: "close"
+      }, "X"), /*#__PURE__*/React.createElement("h2", null, "Create new employee"), /*#__PURE__*/React.createElement("form", null, inputs, /*#__PURE__*/React.createElement("button", {
+        onClick: this.handleSubmit
+      }, "Create")))));
+    }
+  }]);
+
+  return CreateDialog;
 }(React.Component); // Render the code with the given React component (<App />) and the DOM node
 // to inject it into. In another part of the code, there is an HTML construct
 // <div id="react"></div>, which serves as the entry point for our rendered
@@ -34266,6 +34635,137 @@ module.exports = rest.wrap(mime, {
     'Accept': 'application/hal+json'
   }
 });
+
+/***/ }),
+
+/***/ "./src/main/js/follow.js":
+/*!*******************************!*\
+  !*** ./src/main/js/follow.js ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+// Edit to the musings below:
+// I think I finally get how this funciton works. In short, it is trying to
+// find what you want (the items in relArray). I'll illustrate it with the
+// example of how it's used in loadFromServer with a single element list trying
+// to find the relation "employees" [{rel: "employees", params: pageSize}]
+//
+// For this example,
+// api = client -- the client object to communicate with the server
+// rootPath = /api
+// relArray = [{rel:"employees", parmas: pageSize}]
+//
+// First the function gets the root json object by making a GET request to
+// the api with the rootPath. That gives an object with
+// json = { "_links" : { ... }
+// }
+//
+// the reduce function (foldl') folds relArray, in our case the single element
+// relation looking for "employees" with params: pageSize, and ends up calling
+// traverseNext with json (the object we found above), "employees", and the
+// Map with the params in it. It first checks to see if json has an "_embedded"
+// key, which it does not. It moves next to see if it has "_links", which it
+// does. It then knows it needs to work with "_links" to find "employees", so
+// it asks the api to GET the link found at _links["employees"].href, which
+// is http://localhost:8080/api/employees, and also use the params found in
+// arrayItem.params (i.e. pageSize). The result is the json object that
+// includes the list of employees with the appropriate page size.
+//
+// It is my belief that the return value from traverseNext would be fed into
+// the next item in relArray if there was another one, to find additional
+// relations after that (so you can find "last" for instance), in this case,
+// we are done, so the follow function returns the json object that
+// traverseNext found.
+//
+// Unfortunately, the guide did not include much information about this
+// function. Clearly, the purpose is to be able to navigate links. I wish
+// I had more information about the sorts of things that the arguments are.
+// I've done the best I can to comment on what's going on in this funciton,
+// but I've received no help from the person who wrote the guide, so I may
+// have some things wrong.
+//
+// api -- like client, it can fetch information from the server
+// rootPath -- a path to the root (i.e. '/api')
+// relArray -- a relationship array; as an example, 'employees' is a
+// relationship that could be an item of this array. Because JavaScript is
+// weird, array items can also be of different type than string -- they can
+// be dictionaries with a rel key where the relationship is the value of
+// arrayItem.rel (hence all of the checks like typeof arrayItem === 'string')
+module.exports = function follow(api, rootPath, relArray) {
+  // get the json object of the relation
+  var root = api({
+    method: 'GET',
+    path: rootPath
+  }); // equivalent Haskell pseudocode:
+  // foldl' traverseNext root relArray
+  // note here that 'root' in the anonymous function parameter is a HIGHLY
+  // misleading name. It's not the root, it's the accumulation so far. I'm
+  // not going to change this right now for fear of breaking something, but
+  // my examination of the code is such that it would be like doing
+  // foldl' (\root arrayItem -> traverseNext root rel arrayItem) root relArray
+  // (rel in the code above is hypothetical, since Haskell won't let you have
+  // something that "might be a string or might be a Map")
+
+  return relArray.reduce(function (root, arrayItem) {
+    var rel = typeof arrayItem === 'string' ? arrayItem : arrayItem.rel;
+    return traverseNext(root, rel, arrayItem);
+  }, root); // Note: while it may seem strange to have a folding function, which is what
+  // traverseNext is, have 3 parameters instead of the usual 2, the reason why
+  // is because this JavaScript code needs to know if you're working with a
+  // string or Map because if it's a Map, you need to check the params, too.
+  // In Haskell, you wouldn't (coudln't even) do something like that, you
+  // would instead fold the "it might have params or not" into the type system
+  // with a tuple (JSON, Maybe [Text]) or perhaps a Data type.
+  // Again, as noted above, "root" is a terrible name. It's more like "the
+  // JSON object of the relation you are working with".
+  // Also noted previously, the JSON object that this function is passed in
+  // and returns are actually wrapped in the Promise monad (I think), and I
+  // believe that doing root.then(...) is like doing root >>= \json -> (...)
+  // in Haskell, or like doing json <- root in do notation.
+  // The actual type of traverseNext is probably something like:
+  // traverseNext :: Promise JSON -> Relation -> ArrayItem -> Promise JSON
+  // traverseNext :: JSON -> Relation -> ArrayItem -> JSON
+
+  function traverseNext(root, rel, arrayItem) {
+    return root.then(function (response) {
+      // if the entity has this relation, go there next (I think)
+      if (hasEmbeddedRel(response.entity, rel)) {
+        return response.entity._embedded[rel];
+      } // if the entity does not have a _links key, there is nowhere else
+      // to go
+
+
+      if (!response.entity._links) {
+        return [];
+      } // if none of the above cases are true, then either the relation
+      // is a string or a dictionary with a relation and params. If it is
+      // just a string, go there. If it is a dictionary, go to the relation
+      // location using the specified params
+
+
+      if (typeof arrayItem === 'string') {
+        return api({
+          method: 'GET',
+          path: response.entity._links[rel].href
+        });
+      } else {
+        return api({
+          method: 'GET',
+          path: response.entity._links[rel].href,
+          params: arrayItem.params
+        });
+      }
+    });
+  } // this function checks whether the given entity (which is a dictionary)
+  // has an _embedded key and whether that _embedded key has this
+  // relationship as a key
+
+
+  function hasEmbeddedRel(entity, rel) {
+    return entity._embedded && entity._embedded.hasOwnProperty(rel);
+  }
+};
 
 /***/ }),
 
