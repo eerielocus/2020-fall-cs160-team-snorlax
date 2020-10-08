@@ -34701,7 +34701,7 @@ module.exports = function follow(api, rootPath, relArray) {
 
   function traverseNext(here, rel, arrayItem) {
     return here.then(function (response) {
-      // if the entity has this relation, go there next (I think)
+      // if the entity has this relation, go there next
       if (hasEmbeddedRel(response.entity, rel)) {
         return response.entity._embedded[rel];
       } // if the entity does not have a _links key, there is nowhere else
