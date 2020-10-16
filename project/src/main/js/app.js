@@ -42,15 +42,16 @@ class Upload extends React.Component {
           path: '/api/upload',
           entity: formData,
           headers: {'Content-Type': 'multipart/form-data'}
-        }).done(res => {
-          console.log(res.data);
+        }).then(res => {
+          // res.entity is the key to find this image. We can now look that
+          // image up to find more information about it.
+          console.log(res.entity);
 
           // this is just for handy feedback. I expect that we won't have
           // such an annoying feature in the finished product.
           alert("File uploaded successfully.");
-        });
-      })
-      .catch(err => console.log(err));
+        }).catch(err => console.log(err))
+      }).catch(err => console.log(err));
   }
 
   // render a dropzone box that accepts any type of image.

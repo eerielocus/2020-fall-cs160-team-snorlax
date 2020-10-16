@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.*;
 // import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.IOException;
 
 
 @CrossOrigin("*")
@@ -26,10 +29,9 @@ public class ImageController {
 
   // Receive image file data and IP address of uploader. Upload that image
   // to the database.
-  // TODO: This function also needs to save the image to the filesystem
   @PostMapping(value = "/api/upload",
     consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity uploadFile(@RequestParam MultipartFile file,
+  public ResponseEntity<String> uploadFile(@RequestParam MultipartFile file,
       @RequestParam String ip) {
 
     // logger.info(String.format("File name '%s' uploaded successfully.",
@@ -41,8 +43,17 @@ public class ImageController {
 
     Image img = new Image(filename, type, ip, timestamp);
 
-    repository.save(img);
+    Path path = Paths.get(String.format("data/images/%s.%s", filename, type));
+    try {
+      file.transferTo(path);
+      repository.save(img);
+    } catch (IOException e) {
+      System.err.println("Internal error: Could not download file to server.");
+    }
 
-    return ResponseEntity.ok().build();
+    return ResponseEntity
+      .ok()
+      .contentType(MediaType.TEXT_PLAIN)
+      .body(filename);
   }
 }
