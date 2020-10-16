@@ -1,4 +1,4 @@
-# Snorlax project
+# Postcard
 Drag and drop an image to upload it to the database.<br />
 
 Run the server by using command: ./mvnw spring-boot:run<br />
