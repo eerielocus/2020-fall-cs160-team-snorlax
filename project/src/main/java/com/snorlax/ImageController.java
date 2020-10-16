@@ -24,6 +24,9 @@ public class ImageController {
   // private static final Logger logger =
     // LoggerFactory.getLogger(ApiController.class);
 
+  // Receive image file data and IP address of uploader. Upload that image
+  // to the database.
+  // TODO: This function also needs to save the image to the filesystem
   @PostMapping(value = "/api/upload",
     consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity uploadFile(@RequestParam MultipartFile file,
@@ -36,10 +39,9 @@ public class ImageController {
     String type = file.getContentType().substring(6); // strip off "image/"
     long timestamp = System.currentTimeMillis();
 
-    // Not yet implemented
-     Image img = new Image(filename, type, ip, timestamp);
+    Image img = new Image(filename, type, ip, timestamp);
 
-     repository.save(img);
+    repository.save(img);
 
     return ResponseEntity.ok().build();
   }
