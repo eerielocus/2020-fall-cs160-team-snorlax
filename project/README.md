@@ -7,6 +7,7 @@ On Windows, use mvnw.cmd instead<br />
 Visit localhost:8080 on a browser to see how React has rendered the page.
 You can upload an image on this page. Nothing is preloaded into the database,
 but with an image uploaded, you can navigate to it with the API.<br/>
+
 Visit localhost:8080/api to view the API datastructure. You can follow the
 links to find any uploaded images, so for instance, localhost:8080/api/images
 will show you the list of images in the database. You can navigate to a
