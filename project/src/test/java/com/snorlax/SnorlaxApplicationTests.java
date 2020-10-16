@@ -1,10 +1,10 @@
-package com.uploader.aight;
+package com.snorlax;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class SickApplicationTests {
+class SnorlaxApplicationTests {
 
 	@Test
 	void contextLoads() {
