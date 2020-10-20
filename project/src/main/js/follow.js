@@ -1,5 +1,5 @@
 // Attempt to find the relations in relArray using the given api and starting
-// point rootPath
+// point rootPath.
 //
 // api -- the api that fetches information from the server (i.e. client object)
 // rootPath -- a path to the starting point (i.e. '/api')
@@ -18,6 +18,7 @@ module.exports = function follow(api, rootPath, relArray) {
     return traverseNext(here, rel, arrayItem);
   }, root);
 
+  // Traverse to the next relation in relArray
   // traverseNext :: Promise JSON -> Relation -> ArrayItem -> Promise JSON
   function traverseNext (here, rel, arrayItem) {
     return here.then(function (response) {
