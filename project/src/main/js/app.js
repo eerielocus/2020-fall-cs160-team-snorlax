@@ -79,15 +79,19 @@ class App extends React.Component {
 //   format={img.format}
 //   ip={img.uploaderIp}
 //   timestamp={img.timestamp}/>
+//
+// Note that when number of views is implemented, that would be a prop, too.
 class Image extends React.Component {
   constructor(props) {
     super(props);
   }
 
   render() {
-     const path = "data/images/"
-       + this.props.image.filename + "."
-       + this.props.image.format;
+    // These props need to be set when the component is created (see example
+    // above).
+    const path = "data/images/"
+      + this.props.image.filename + "."
+      + this.props.image.format;
 
     return (
       <img src={path}/>
