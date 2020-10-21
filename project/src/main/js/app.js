@@ -64,21 +64,36 @@ class App extends React.Component {
   render() {
     return (
       <Upload />
-      // <Image />
     )
   }
 }
 
-// class Image extends React.Component {
-//   constructor(props) {
-//     super(props);
-//   }
+// Image component -- This should display the image, and also show other
+// information like number of views and the share link.
+//
+// Assuming you have a hal+json object img, you could create this
+// component like so:
+// <Image
+//   key={img._links.self.href}
+//   filename={img.filename}
+//   format={img.format}
+//   ip={img.uploaderIp}
+//   timestamp={img.timestamp}/>
+class Image extends React.Component {
+  constructor(props) {
+    super(props);
+  }
 
-//   render() {
-//     return (
-//     )
-//   }
-// }
+  render() {
+     const path = "data/images/"
+       + this.props.image.filename + "."
+       + this.props.image.format;
+
+    return (
+      <img src={path}/>
+    )
+  }
+}
 
 // Upload an image to the server with a drag and drop box
 class Upload extends React.Component {
