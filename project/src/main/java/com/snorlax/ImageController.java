@@ -2,17 +2,18 @@ package com.uploader.aight;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-
-// import org.slf4j.Logger;
-// import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 
 @CrossOrigin("*")
@@ -24,18 +25,12 @@ public class ImageController {
     this.repository = repository;
   }
 
-  // private static final Logger logger =
-    // LoggerFactory.getLogger(ApiController.class);
-
   // Receive image file data and IP address of uploader. Upload that image
   // to the database.
   @PostMapping(value = "/api/upload",
     consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<String> uploadFile(@RequestParam MultipartFile file,
+  public HttpEntity<Image> uploadFile(@RequestParam MultipartFile file,
       @RequestParam String ip) {
-
-    // logger.info(String.format("File name '%s' uploaded successfully.",
-    //   file.getOriginalFilename()));
 
     String filename = UUID.randomUUID().toString();
     String type = file.getContentType().substring(6); // strip off "image/"
@@ -44,16 +39,22 @@ public class ImageController {
     Image img = new Image(filename, type, ip, timestamp);
 
     Path path = Paths.get(String.format("data/images/%s.%s", filename, type));
+    Image response = null;
     try {
       file.transferTo(path);
-      repository.save(img);
+      response = repository.save(img);
     } catch (IOException e) {
       System.err.println("Internal error: Could not download file to server.");
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
+
+    // create a link to itself
+    response.add(linkTo(methodOn(ImageRepository.class)
+      .findByFilename(filename))
+      .withSelfRel());
 
     return ResponseEntity
       .ok()
-      .contentType(MediaType.TEXT_PLAIN)
-      .body(filename);
+      .body(response);
   }
 }

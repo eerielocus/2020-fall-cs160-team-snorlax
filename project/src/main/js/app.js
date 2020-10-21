@@ -64,9 +64,21 @@ class App extends React.Component {
   render() {
     return (
       <Upload />
+      // <Image />
     )
   }
 }
+
+// class Image extends React.Component {
+//   constructor(props) {
+//     super(props);
+//   }
+
+//   render() {
+//     return (
+//     )
+//   }
+// }
 
 // Upload an image to the server with a drag and drop box
 class Upload extends React.Component {
@@ -106,8 +118,7 @@ class Upload extends React.Component {
           entity: formData,
           headers: {'Content-Type': 'multipart/form-data'}
         }).then(res => {
-          // res.entity is the key to find this image. We can now look that
-          // image up to find more information about it.
+          // res.entity is the image object in JSON format
           console.log(res.entity);
 
           // this is just for handy feedback. I expect that we won't have
