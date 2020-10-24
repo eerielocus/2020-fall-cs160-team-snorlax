@@ -1,4 +1,4 @@
-package com.uploader.aight;
+package com.snorlax;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,6 +27,7 @@ public class ImageController {
 
   // Receive image file data and IP address of uploader. Upload that image
   // to the database.
+  // TODO: change URI to /api/image
   @PostMapping(value = "/api/upload",
     consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public HttpEntity<Image> uploadFile(@RequestParam MultipartFile file,

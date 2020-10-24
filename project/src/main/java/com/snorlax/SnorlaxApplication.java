@@ -1,4 +1,4 @@
-package com.uploader.aight;
+package com.snorlax;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-package com.uploader.aight;
+package com.snorlax;
 
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;

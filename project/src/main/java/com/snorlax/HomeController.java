@@ -1,4 +1,4 @@
-package com.uploader.aight;
+package com.snorlax;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.multipart.MultipartFile;

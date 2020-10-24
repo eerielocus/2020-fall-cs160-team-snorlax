@@ -1,4 +1,4 @@
-package com.uploader.aight;
+package com.snorlax;
 
 import lombok.Data;
 
