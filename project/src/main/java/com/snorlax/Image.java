@@ -21,6 +21,7 @@ public class Image extends RepresentationModel<Image> {
   private String format;
   private String uploaderIp;
   private long timestamp; // miliseconds since Jan 1, 1970
+  private int views;
 
   private Image() {}
 
@@ -29,10 +30,12 @@ public class Image extends RepresentationModel<Image> {
       @JsonProperty("filename") String filename,
       @JsonProperty("format") String format,
       @JsonProperty("uploaderIp") String uploaderIp,
-      @JsonProperty("timestamp") long timestamp) {
+      @JsonProperty("timestamp") long timestamp,
+      @JsonProperty("views") int views) {
     this.filename = filename;
     this.format = format;
     this.uploaderIp = uploaderIp;
     this.timestamp = timestamp;
+    this.views = views;
   }
 }

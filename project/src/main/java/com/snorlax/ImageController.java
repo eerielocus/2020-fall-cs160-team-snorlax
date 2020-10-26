@@ -36,8 +36,9 @@ public class ImageController {
     String filename = UUID.randomUUID().toString();
     String type = file.getContentType().substring(6); // strip off "image/"
     long timestamp = System.currentTimeMillis();
+    int views = 0;
 
-    Image img = new Image(filename, type, ip, timestamp);
+    Image img = new Image(filename, type, ip, timestamp, views);
 
     Path path = Paths.get(String.format("data/images/%s.%s", filename, type));
     Image response = null;

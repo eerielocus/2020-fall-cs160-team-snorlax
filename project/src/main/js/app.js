@@ -84,14 +84,25 @@ class App extends React.Component {
 class Image extends React.Component {
   constructor(props) {
     super(props);
+	this.state={views:0}
   }
-
+  componentDidMount(){
+    client({
+	    method:'GET',
+	    path:this.props.image.key,
+	    
+    }).then(response=> {
+	    this.setState({
+		    views:response.entity.views+1
+	    })
+  }
+  }
   render() {
     // These props need to be set when the component is created (see example
     // above).
     const path = "data/images/"
-      + this.props.image.filename + "."
-      + this.props.image.format;
+      + this.props.filename + "."
+      + this.props.format;
 
     return (
       <img src={path}/>
