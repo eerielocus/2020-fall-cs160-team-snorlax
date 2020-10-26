@@ -95,7 +95,7 @@ class Image extends React.Component {
 	    this.setState({
 		    views:response.entity.views+1
 	    })
-  }
+  })
   }
   render() {
     // These props need to be set when the component is created (see example
