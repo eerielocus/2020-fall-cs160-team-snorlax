@@ -71,38 +71,58 @@ class App extends React.Component {
 // Image component -- This should display the image, and also show other
 // information like number of views and the share link.
 //
-// Assuming you have a hal+json object img, you could create this
-// component like so:
-// <Image
-//   key={img._links.self.href}
-//   filename={img.filename}
-//   format={img.format}
-//   ip={img.uploaderIp}
-//   timestamp={img.timestamp}/>
+// This component requires the image key as a prop.
 //
-// Note that when number of views is implemented, that would be a prop, too.
+// you should create this component like so:
+// <Image key={img._links.self.href} />
+//
+// TODO: This needs to be tested! I have not tested this in any way.
 class Image extends React.Component {
   constructor(props) {
     super(props);
-	this.state={views:0}
+    this.state = {
+      filename: "",
+      format: "",
+      ip: "",
+      timestamp: 0,
+      views: 0
+    }
   }
+
   componentDidMount(){
     client({
-	    method:'GET',
-	    path:this.props.image.key,
-	    
-    }).then(response=> {
-	    this.setState({
-		    views:response.entity.views+1
-	    })
-  })
+      method: 'GET',
+      path: this.props.key
+    }).done(response=> {
+      const newState = {
+        filename: response.entity.filename,
+        format: response.entity.format,
+        ip: response.entity.ip,
+        timestamp: response.entity.timestamp,
+        views: response.entity.views + 1 // increment views
+      };
+
+      // update our own state, which triggers a new render
+      this.setState(newState);
+
+      // update views in server
+      // this could be done with PATCH, but I think it requires more work
+      client({
+        method: 'PUT',
+        path: response.entity._links.self.href,
+        entity: newState,
+        headers: {'Content-Type': 'application/json'}
+      });
+
+    })
   }
+
   render() {
     // These props need to be set when the component is created (see example
     // above).
     const path = "data/images/"
-      + this.props.filename + "."
-      + this.props.format;
+      + this.state.filename + "."
+      + this.state.format;
 
     return (
       <img src={path}/>
@@ -129,10 +149,10 @@ class Upload extends React.Component {
         return response.json();
       }, "jsonp")
 
-      // when we get the response, we need to prepare for uploading the file
-      // to the server. We create a FormData object and append the file and
-      // ip address to it. This data is accessible in our Spring backend by
-      // using @RequestParam in the appropriate Controller method.
+    // when we get the response, we need to prepare for uploading the file
+    // to the server. We create a FormData object and append the file and
+    // ip address to it. This data is accessible in our Spring backend by
+    // using @RequestParam in the appropriate Controller method.
       .then(res => {
         const formData = new FormData();
         formData.append('file', inputFile[0]);
