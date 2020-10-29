@@ -89,6 +89,11 @@ class Image extends React.Component {
     }
   }
 
+  // componentDidMount is called when a component is initially created and
+  // mounted to the DOM. The goal here is to fetch our image information
+  // (pertaining to the key that was given to us in props) from the server,
+  // and also increment the views (because we are currently viewing this
+  // image).
   componentDidMount(){
     client({
       method: 'GET',
