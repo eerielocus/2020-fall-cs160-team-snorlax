@@ -37,3 +37,5 @@ build/
 
 lib
 out
+src/main/test/web
+src/test/lib
