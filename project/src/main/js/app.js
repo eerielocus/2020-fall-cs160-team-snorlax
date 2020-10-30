@@ -57,15 +57,80 @@ const ReactDOM = require('react-dom');
 const client = require('./client');
 import Dropzone from 'react-dropzone';
 
+import { BrowserRouter, Route, Switch, NavLink, useParams }
+  from 'react-router-dom';
+
+const imagePath = require.context('../../../data/images', true);
+
 const root = '/api';
 
-// For now, just ask for the upload.
 class App extends React.Component {
   render() {
     return (
-      <Upload />
+      <BrowserRouter>
+        <div>
+          <Switch>
+            <Route path="/" component={Upload} exact />
+            <Route path="/share/:key" component={Share} />
+            <Route path="/test" component={Test} />
+            <Route component={Error}/>
+          </Switch>
+        </div>
+      </BrowserRouter>
     )
   }
+}
+
+class Test extends React.Component {
+  render() {
+    const someCat = './cat.png';
+    // const someCat = './d9510bc7-eb40-4e7b-99c2-8b5a1ab9f009.png';
+    const catImage = imagePath(someCat, true).default;
+    const display = <img src={catImage} />;
+
+    return (
+      <div>
+        {display}
+      </div>
+    )
+  }
+}
+
+// Something that is correctly mapped by HomeController that fails to find
+// a component routed by React Router will find this component.
+class Error extends React.Component {
+  render() {
+    return (
+      <div>
+        <Navigation />
+        Some error occurred!
+      </div>
+    )
+  }
+}
+
+// Nav links to anywhere we want. Currently just a link back to the uploader.
+class Navigation extends React.Component {
+  render() {
+    return (
+      <div>
+        <NavLink to="/">Upload</NavLink>
+      </div>
+    )
+  }
+}
+
+// This is our component for handling image share. It grabs the key from the
+// URI assuming that the key is of the form /<key goes here> in the URI.
+function Share() {
+  const {key} = useParams();
+
+  return (
+    <div>
+      {/* {key} */}
+      <Image filename={key} />
+    </div>
+  )
 }
 
 // Image component -- This should display the image, and also show other
@@ -83,7 +148,7 @@ class Image extends React.Component {
     this.state = {
       filename: "",
       format: "",
-      ip: "",
+      uploaderIp: "",
       timestamp: 0,
       views: 0
     }
@@ -97,18 +162,18 @@ class Image extends React.Component {
   componentDidMount(){
     client({
       method: 'GET',
-      path: this.props.key
-    }).done(response=> {
+      path: '../api/images/' + this.props.filename
+    }).then(response=> {
+      console.log(response);
       const newState = {
-        filename: response.entity.filename,
         format: response.entity.format,
-        ip: response.entity.ip,
+        uploaderIp: response.entity.uploaderIp,
         timestamp: response.entity.timestamp,
         views: response.entity.views + 1 // increment views
       };
 
-      // update our own state, which triggers a new render
-      this.setState(newState);
+      console.log(newState);
+
 
       // update views in server
       // this could be done with PATCH, but I think it requires more work
@@ -119,18 +184,30 @@ class Image extends React.Component {
         headers: {'Content-Type': 'application/json'}
       });
 
-    })
+      return newState;
+
+    }).done(newState => {
+      // update our own state, which triggers a new render
+      this.setState(newState);
+    });
   }
 
   render() {
-    // These props need to be set when the component is created (see example
-    // above).
-    const path = "data/images/"
-      + this.state.filename + "."
-      + this.state.format;
+    var display;
+    if (this.state.format !== "") {
+      const filePath = "./" + this.props.filename + "." + this.state.format;
+      const imageSrc = imagePath(filePath, true).default;
+      display = <img src={imageSrc} />;
+    } else {
+      display = "";
+    }
+
+    // const catImage = imagePath('./cat.png', true).default;
 
     return (
-      <img src={path}/>
+      <div>
+        {display}
+      </div>
     )
   }
 }
@@ -169,7 +246,7 @@ class Upload extends React.Component {
         // passes data through 'entity'.
         client({
           method: 'POST',
-          path: '/api/upload',
+          path: '/api/images',
           entity: formData,
           headers: {'Content-Type': 'multipart/form-data'}
         }).then(res => {

@@ -7,13 +7,12 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.UUID;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
-
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 
 @CrossOrigin("*")
@@ -21,14 +20,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 public class ImageController {
   private final ImageRepository repository;
 
+  @Autowired
   ImageController(ImageRepository repository) {
     this.repository = repository;
   }
 
   // Receive image file data and IP address of uploader. Upload that image
   // to the database.
-  // TODO: change URI to /api/image
-  @PostMapping(value = "/api/upload",
+  @PostMapping(value = "/api/images",
     consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public HttpEntity<Image> uploadFile(@RequestParam MultipartFile file,
       @RequestParam String ip) {
@@ -49,11 +48,6 @@ public class ImageController {
       System.err.println("Internal error: Could not download file to server.");
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
-
-    // create a link to itself
-    response.add(linkTo(methodOn(ImageRepository.class)
-      .findByFilename(filename))
-      .withSelfRel());
 
     return ResponseEntity
       .ok()

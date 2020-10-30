@@ -15,7 +15,7 @@ import javax.persistence.Id;
  */
 @Data
 @Entity
-public class Image extends RepresentationModel<Image> {
+public class Image {
   private @Id String filename;
   private String format;
   private String uploaderIp;
