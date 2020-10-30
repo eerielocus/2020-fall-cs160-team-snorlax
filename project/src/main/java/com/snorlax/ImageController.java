@@ -3,6 +3,7 @@ package com.snorlax;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
@@ -20,18 +21,18 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @RestController
 public class ImageController {
   private final ImageRepository repository;
-
+  
+  @Autowired
   ImageController(ImageRepository repository) {
     this.repository = repository;
   }
+  
 
   // Receive image file data and IP address of uploader. Upload that image
   // to the database.
   // TODO: change URI to /api/image
-  @PostMapping(value = "/api/upload",
-    consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public HttpEntity<Image> uploadFile(@RequestParam MultipartFile file,
-      @RequestParam String ip) {
+  @PostMapping(value = "/api/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public HttpEntity<Image> uploadFile(@RequestParam MultipartFile file, @RequestParam String ip) {
 
     String filename = UUID.randomUUID().toString();
     String type = file.getContentType().substring(6); // strip off "image/"
@@ -55,8 +56,6 @@ public class ImageController {
       .findByFilename(filename))
       .withSelfRel());
 
-    return ResponseEntity
-      .ok()
-      .body(response);
+    return ResponseEntity.ok().body(response);
   }
 }
