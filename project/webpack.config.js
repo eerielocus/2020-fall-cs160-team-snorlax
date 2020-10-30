@@ -12,7 +12,14 @@ module.exports = {
     module: {
         rules: [
             {
-                test: path.join(__dirname, '.'),
+                test: /\.(jpg|png|svg)$/i,
+                loader: 'url-loader',
+                options: {
+                  outputPath: 'images'
+                }
+            },
+            {
+                test: /\.jsx?$/,
                 exclude: /(node_modules)/,
                 use: [{
                     loader: 'babel-loader',

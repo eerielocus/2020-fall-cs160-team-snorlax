@@ -183,10 +183,12 @@ class Upload extends React.Component {
         }).then(res => {
           // res.entity is the image object in JSON format
           console.log(res.entity);
-          
+          const someURL = URL.createObjectURL(inputFile[0]);
+          console.log(someURL);
+
           this.setState({ filename: res.entity.filename });
           this.setState({ uploaded: true });
-          this.setState({ URL: URL.createObjectURL(res.entity) });
+          this.setState({ URL: someURL });
 
           // this is just for handy feedback. I expect that we won't have
           // such an annoying feature in the finished product.

@@ -4,6 +4,7 @@ node_modules/
 data/
 images/
 src/main/resources/static/built/
+src/main/resources/public/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
