@@ -58,6 +58,7 @@ const client = require('./client');
 import Dropzone from 'react-dropzone';
 
 const root = '/api';
+const imagePath = require.context('../../../data/images', true);
 
 // For now, just ask for the upload.
 class App extends React.Component {
@@ -72,18 +73,18 @@ class App extends React.Component {
 // information like number of views and the share link.
 //
 // This component requires the image key as a prop.
+//  - had to change key to keys as there was a special property already for key
 //
 // you should create this component like so:
-// <Image key={img._links.self.href} />
+// <Image keys={img._links.self.href} />
 //
 // TODO: This needs to be tested! I have not tested this in any way.
 class Image extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      filename: "",
       format: "",
-      ip: "",
+      uploaderIp: "",
       timestamp: 0,
       views: 0
     }
@@ -94,43 +95,44 @@ class Image extends React.Component {
   // (pertaining to the key that was given to us in props) from the server,
   // and also increment the views (because we are currently viewing this
   // image).
-  componentDidMount(){
+  componentDidMount() {
     client({
       method: 'GET',
-      path: this.props.key
-    }).done(response=> {
+      path: '/api/images/' + this.props.filename
+    }).done(response => {
       const newState = {
-        filename: response.entity.filename,
         format: response.entity.format,
-        ip: response.entity.ip,
+        uploaderIp: response.entity.uploaderIp,
         timestamp: response.entity.timestamp,
         views: response.entity.views + 1 // increment views
       };
 
-      // update our own state, which triggers a new render
+      // Update our own state, which triggers a new render
+      console.log(newState);
       this.setState(newState);
 
-      // update views in server
+      // Update views in server
       // this could be done with PATCH, but I think it requires more work
       client({
         method: 'PUT',
         path: response.entity._links.self.href,
         entity: newState,
-        headers: {'Content-Type': 'application/json'}
+        headers: { 'Content-Type': 'application/json' }
       });
-
     })
   }
 
   render() {
     // These props need to be set when the component is created (see example
     // above).
-    const path = "data/images/"
-      + this.state.filename + "."
-      + this.state.format;
+    const img = {
+      display: 'block',
+      width: 'auto',
+      height: '100%'
+    };
 
     return (
-      <img src={path}/>
+      <img src={this.props.path} style={img}/>
     )
   }
 }
@@ -140,6 +142,12 @@ class Upload extends React.Component {
   constructor(props) {
     super(props);
 
+    // Setup state to trigger conditional render and send data
+    this.state = {
+      filename: "",
+      uploaded: false,
+      URL: ""
+    }
     // this is boilerplate that is necessary when a component has a helper
     // function other than one of the primary component methods.
     this.onFileDrop = this.onFileDrop.bind(this);
@@ -154,10 +162,10 @@ class Upload extends React.Component {
         return response.json();
       }, "jsonp")
 
-    // when we get the response, we need to prepare for uploading the file
-    // to the server. We create a FormData object and append the file and
-    // ip address to it. This data is accessible in our Spring backend by
-    // using @RequestParam in the appropriate Controller method.
+      // when we get the response, we need to prepare for uploading the file
+      // to the server. We create a FormData object and append the file and
+      // ip address to it. This data is accessible in our Spring backend by
+      // using @RequestParam in the appropriate Controller method.
       .then(res => {
         const formData = new FormData();
         formData.append('file', inputFile[0]);
@@ -171,10 +179,14 @@ class Upload extends React.Component {
           method: 'POST',
           path: '/api/upload',
           entity: formData,
-          headers: {'Content-Type': 'multipart/form-data'}
+          headers: { 'Content-Type': 'multipart/form-data' }
         }).then(res => {
           // res.entity is the image object in JSON format
           console.log(res.entity);
+          
+          this.setState({ filename: res.entity.filename });
+          this.setState({ uploaded: true });
+          this.setState({ URL: URL.createObjectURL(inputFile[0]) });
 
           // this is just for handy feedback. I expect that we won't have
           // such an annoying feature in the finished product.
@@ -187,16 +199,21 @@ class Upload extends React.Component {
   // Dropzone handles file uploads in a drag and drop style. The look can be
   // modified by changing .fileDrop in src/main/resources/static/main.css
   render() {
-    return(
+    // Conditional rendering flag to determine if to simply show text or image
+    // after upload
+    const isUploaded = this.state.uploaded;
+
+    return (
       <Dropzone
         accept="image/*"
         onDrop={this.onFileDrop}>
-        {({getRootProps, getInputProps}) => (
+        {({ getRootProps, getInputProps }) => (
           <section>
             <div {...getRootProps()}>
               <input {...getInputProps()} />
               <div className='fileDrop'>
-                Drag a file here or click to upload.
+                {!isUploaded && "Drag a file here or click to upload."}
+                {isUploaded && <Image filename={this.state.filename} path={this.state.URL}/>}
               </div>
             </div>
           </section>

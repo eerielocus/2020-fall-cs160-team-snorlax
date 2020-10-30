@@ -10,9 +10,17 @@
   height: 400px;
   line-height: 400px;
   text-align: center;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .fileDrop:hover {
   background: rgb(194, 243, 194);
   border: 1px dashed #333;
+}
+
+.imageUp {
+  display: block;
+  margin-left: auto;
+  margin-right: auto
 }
