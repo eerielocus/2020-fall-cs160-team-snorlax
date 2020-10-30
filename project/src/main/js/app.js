@@ -83,10 +83,12 @@ class App extends React.Component {
 
 class Test extends React.Component {
   render() {
-    const someCat = './cat.png';
+    // const someCat = './cat.png';
     // const someCat = './d9510bc7-eb40-4e7b-99c2-8b5a1ab9f009.png';
-    const catImage = imagePath(someCat, true).default;
-    const display = <img src={catImage} />;
+    // const catImage = imagePath(someCat, true).default;
+    // const display = <img src={catImage} />;
+    const path = './data/images/cat.png';
+    const display = <img src={path} />;
 
     return (
       <div>
@@ -174,7 +176,6 @@ class Image extends React.Component {
 
       console.log(newState);
 
-
       // update views in server
       // this could be done with PATCH, but I think it requires more work
       client({
@@ -195,8 +196,11 @@ class Image extends React.Component {
   render() {
     var display;
     if (this.state.format !== "") {
-      const filePath = "./" + this.props.filename + "." + this.state.format;
-      const imageSrc = imagePath(filePath, true).default;
+      // const filePath = "./" + this.props.filename + "." + this.state.format;
+      // const imageSrc = imagePath(filePath, true).default;
+      const imageSrc = '../'
+        + this.props.filename + "."
+        + "png";
       display = <img src={imageSrc} />;
     } else {
       display = "";
