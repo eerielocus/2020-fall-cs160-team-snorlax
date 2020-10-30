@@ -21,12 +21,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 @RestController
 public class ImageController {
   private final ImageRepository repository;
-  
+
   @Autowired
   ImageController(ImageRepository repository) {
     this.repository = repository;
   }
-  
+
 
   // Receive image file data and IP address of uploader. Upload that image
   // to the database.
@@ -50,11 +50,6 @@ public class ImageController {
       System.err.println("Internal error: Could not download file to server.");
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
-
-    // create a link to itself
-    response.add(linkTo(methodOn(ImageRepository.class)
-      .findByFilename(filename))
-      .withSelfRel());
 
     return ResponseEntity.ok().body(response);
   }
