@@ -55,6 +55,7 @@
 const React = require('react');
 const ReactDOM = require('react-dom');
 const client = require('./client');
+const follow = require('./follow');
 import Dropzone from 'react-dropzone';
 
 import { BrowserRouter, Route, Switch, NavLink, useParams }
@@ -73,6 +74,7 @@ class App extends React.Component {
             <Route path="/" component={Upload} exact />
             <Route path="/share/:key" component={Share} />
             <Route path="/test" component={Test} />
+            <Route path="/testd" component={TestDynamic} />
             <Route component={Error}/>
           </Switch>
         </div>
@@ -89,6 +91,40 @@ class Test extends React.Component {
     // const display = <img src={catImage} />;
     const path = './data/images/cat.png';
     const display = <img src={path} />;
+
+    return (
+      <div>
+        {display}
+      </div>
+    )
+  }
+}
+
+class TestDynamic extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      url: ""
+    };
+  }
+
+  componentDidMount() {
+    fetch('http://localhost:8080/api/images/test')
+      .then(response => {
+        console.log(response);
+        response.blob().then(blob => {
+          console.log(blob);
+          const url = URL.createObjectURL(blob);
+          console.log(url);
+          this.setState({
+            url: url
+          });
+        });
+      });
+  }
+
+  render() {
+    const display = <img src={this.state.url} />
 
     return (
       <div>
@@ -143,7 +179,8 @@ function Share() {
 // you should create this component like so:
 // <Image key={img._links.self.href} />
 //
-// TODO: This needs to be tested! I have not tested this in any way.
+// TODO: With the new changes, using blob instead of a filepath to a file on
+// the filesystem, this component needs a total overhaul.
 class Image extends React.Component {
   constructor(props) {
     super(props);
@@ -243,8 +280,6 @@ class Upload extends React.Component {
         const formData = new FormData();
         formData.append('file', inputFile[0]);
         formData.append('ip', res.ip);
-        console.log(inputFile);
-        console.log(res.ip);
 
         // client is our REST api object for interracting with the server. It
         // passes data through 'entity'.
@@ -255,7 +290,7 @@ class Upload extends React.Component {
           headers: {'Content-Type': 'multipart/form-data'}
         }).then(res => {
           // res.entity is the image object in JSON format
-          console.log(res.entity);
+          console.log(res);
 
           // this is just for handy feedback. I expect that we won't have
           // such an annoying feature in the finished product.
