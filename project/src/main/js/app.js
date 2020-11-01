@@ -249,11 +249,10 @@ class Upload extends React.Component {
 
     // Setup state to trigger conditional render and send data
     this.state = {
-      // filename: "",
       imageID: 0,
       uploaded: false,
-      // URL: ""
     }
+
     // this is boilerplate that is necessary when a component has a helper
     // function other than one of the primary component methods.
     this.onFileDrop = this.onFileDrop.bind(this);
@@ -287,12 +286,7 @@ class Upload extends React.Component {
         }).then(res => {
           // res.entity is the image object in JSON format
           console.log(res.entity);
-          // const someURL = URL.createObjectURL(inputFile[0]);
-          // console.log(someURL);
 
-          // this.setState({ filename: res.entity.filename });
-          // this.setState({ uploaded: true });
-          // this.setState({ URL: someURL });
           this.setState({
             imageID: res.entity.id,
             uploaded: true,
