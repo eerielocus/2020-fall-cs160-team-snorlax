@@ -3,9 +3,10 @@ package com.snorlax;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import org.springframework.hateoas.RepresentationModel;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Lob;
 import javax.persistence.Id;
 
 
@@ -16,22 +17,34 @@ import javax.persistence.Id;
 @Data
 @Entity
 public class Image {
-  private @Id String filename;
+  @JsonProperty("id")
+  private @Id @GeneratedValue Long id;
+
+  @JsonProperty("data")
+  private @Lob byte[] data;
+
+  @JsonProperty("format")
   private String format;
+
+  @JsonProperty("uploaderIp")
   private String uploaderIp;
-  private long timestamp; // miliseconds since Jan 1, 1970
+
+  @JsonProperty("timestamp")
+  private long timestamp;
+
+  @JsonProperty("views")
   private int views;
 
   private Image() {}
 
   @JsonCreator
   public Image(
-      @JsonProperty("filename") String filename,
-      @JsonProperty("format") String format,
-      @JsonProperty("uploaderIp") String uploaderIp,
-      @JsonProperty("timestamp") long timestamp,
-      @JsonProperty("views") int views) {
-    this.filename = filename;
+      byte[] data,
+      String format,
+      String uploaderIp,
+      long timestamp,
+      int views) {
+    this.data = data;
     this.format = format;
     this.uploaderIp = uploaderIp;
     this.timestamp = timestamp;

@@ -8,17 +8,21 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import java.net.URI;
+
+import java.util.Collection;
 import java.util.UUID;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
-
 
 @CrossOrigin("*")
 @RestController
+// @RequestMapping("/api/images")
 public class ImageController {
   private final ImageRepository repository;
 
@@ -30,27 +34,54 @@ public class ImageController {
 
   // Receive image file data and IP address of uploader. Upload that image
   // to the database.
-  // TODO: change URI to /api/image
-  @PostMapping(value = "/api/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public HttpEntity<Image> uploadFile(@RequestParam MultipartFile file, @RequestParam String ip) {
+  @PostMapping(value = "/api/images",
+    consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public HttpEntity<Image> uploadFile(@RequestParam MultipartFile file,
+      @RequestParam String ip) {
 
-    String filename = UUID.randomUUID().toString();
-    String type = file.getContentType().substring(6); // strip off "image/"
-    long timestamp = System.currentTimeMillis();
-    int views = 0;
-
-    Image img = new Image(filename, type, ip, timestamp, views);
-
-    Path path = Paths.get(String.format("data/images/%s.%s", filename, type));
-    Image response = null;
+    byte[] data = null;
     try {
-      file.transferTo(path);
-      response = repository.save(img);
+      data = file.getBytes();
     } catch (IOException e) {
-      System.err.println("Internal error: Could not download file to server.");
+      System.err.println("Internal error: Could not upload file to server.");
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
 
-    return ResponseEntity.ok().body(response);
+    String type = file.getContentType();
+    long timestamp = System.currentTimeMillis();
+    int views = 0;
+
+    Image img = new Image(data, type, ip, timestamp, views);
+    Image response = repository.save(img);
+
+    URI location =
+      ServletUriComponentsBuilder.fromCurrentRequest().build().toUri();
+
+    return ResponseEntity
+      .created(location)
+      .body(response);
+  }
+
+  @GetMapping(value = "/api/images/test")
+  public HttpEntity<byte[]> getFirstImage() {
+    if (repository.count() == 0) {
+      return ResponseEntity.ok(new byte[0]);
+    }
+
+    Image images = repository.findById(1L).get();
+    return ResponseEntity
+      .ok()
+      .body(images.getData());
+  }
+
+  @GetMapping(value = "api/images/blob/{id}")
+  public HttpEntity<byte[]> getBlob(@PathVariable Long id) {
+    byte[] data = repository.findById(id)
+      .map(Image::getData)
+      .orElse(new byte[0]);
+
+    return ResponseEntity
+      .ok()
+      .body(data);
   }
 }

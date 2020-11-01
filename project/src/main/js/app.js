@@ -55,38 +55,129 @@
 const React = require('react');
 const ReactDOM = require('react-dom');
 const client = require('./client');
+const follow = require('./follow');
 import Dropzone from 'react-dropzone';
 
-const root = '/api';
-const imagePath = require.context('../../../data/images', true);
+import { BrowserRouter, Route, Switch, NavLink, useParams, Redirect }
+  from 'react-router-dom';
 
-// For now, just ask for the upload.
+const root = '/api';
+
 class App extends React.Component {
   render() {
     return (
-      <Upload />
+      <BrowserRouter>
+        <div>
+          <Switch>
+            <Route path="/" component={Upload} exact />
+            <Route path="/share/:key" component={Share} />
+            <Route path="/test" component={Test} />
+            <Route path="/testd" component={TestDynamic} />
+            <Route component={Error}/>
+          </Switch>
+        </div>
+      </BrowserRouter>
     )
   }
+}
+
+class Test extends React.Component {
+  render() {
+    const path = './data/images/cat.png';
+    const display = <img src={path} />;
+
+    return (
+      <div>
+        {display}
+      </div>
+    )
+  }
+}
+
+class TestDynamic extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      url: ""
+    };
+  }
+
+  componentDidMount() {
+    // fetch('http://localhost:8080/api/images/test')
+    fetch('http://localhost:8080/api/images/blob/1')
+      .then(response => {
+        console.log(response);
+        response.blob().then(blob => {
+          console.log(blob);
+          if (blob.size != 0) {
+            const url = URL.createObjectURL(blob);
+            console.log(url);
+            this.setState({
+              url: url
+            });
+          }
+        });
+      });
+  }
+
+  render() {
+    const display = <img src={this.state.url} />
+
+    return (
+      <div>
+        {display}
+      </div>
+    )
+  }
+}
+
+// Something that is correctly mapped by HomeController that fails to find
+// a component routed by React Router will find this component.
+class Error extends React.Component {
+  render() {
+    return (
+      <div>
+        <Navigation />
+        Some error occurred!
+      </div>
+    )
+  }
+}
+
+// Nav links to anywhere we want. Currently just a link back to the uploader.
+class Navigation extends React.Component {
+  render() {
+    return (
+      <div>
+        <NavLink to="/">Upload</NavLink>
+      </div>
+    )
+  }
+}
+
+// This is our component for handling image share. It grabs the key from the
+// URI assuming that the key is of the form /<key goes here> in the URI.
+function Share() {
+  const {key} = useParams();
+
+  return (
+    <div>
+      <Image id={key} />
+    </div>
+  )
 }
 
 // Image component -- This should display the image, and also show other
 // information like number of views and the share link.
 //
-// This component requires the image key as a prop.
-//  - had to change key to keys as there was a special property already for key
-//
 // you should create this component like so:
-// <Image keys={img._links.self.href} />
-//
-// TODO: This needs to be tested! I have not tested this in any way.
+// <Image id={someID} />
 class Image extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      format: "",
-      uploaderIp: "",
-      timestamp: 0,
-      views: 0
+      views: 0,
+      url: ""
     }
   }
 
@@ -98,41 +189,55 @@ class Image extends React.Component {
   componentDidMount() {
     client({
       method: 'GET',
-      path: '/api/images/' + this.props.filename
-    }).done(response => {
-      const newState = {
-        format: response.entity.format,
-        uploaderIp: response.entity.uploaderIp,
-        timestamp: response.entity.timestamp,
-        views: response.entity.views + 1 // increment views
-      };
-
-      // Update our own state, which triggers a new render
-      console.log(newState);
-      this.setState(newState);
+      path: '../api/images/' + this.props.id
+    }).then(response=> {
+      console.log(response);
+      const views = response.entity.views + 1;
 
       // Update views in server
       // this could be done with PATCH, but I think it requires more work
-      client({
-        method: 'PUT',
-        path: response.entity._links.self.href,
-        entity: newState,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    })
+      // TODO: This needs to be implemented. This could be done by getting
+      // all of the state information from server and passing in a new
+      // object with PUT, or we could implement it with PATCH and it should
+      // work with just views, I think.
+      // client({
+      //   method: 'PUT',
+      //   path: response.entity._links.self.href,
+      //   entity: newState,
+      //   headers: {'Content-Type': 'application/json'}
+      // });
+
+      fetch('http://localhost:8080/api/images/blob/1')
+        .then(response => {
+          console.log(response);
+          response.blob().then(blob => {
+            console.log(blob);
+            if (blob.size != 0) {
+              const url = URL.createObjectURL(blob);
+              console.log(url);
+              this.setState({
+                views: views,
+                url: url
+              });
+            }
+          });
+        });
+    }).catch(error => {
+      console.log("An error has occurred!");
+      console.log(error);
+    });
   }
 
   render() {
-    // These props need to be set when the component is created (see example
-    // above).
-    const img = {
-      display: 'block',
-      width: 'auto',
-      height: '100%'
-    };
+    const display = <img src={this.state.url} />;
+    const shareURL = 'http://localhost:8080/share/' + this.props.id;
 
     return (
-      <img src={this.props.path} style={img}/>
+      <div>
+        {display}<br />
+        Views: {this.state.views}<br />
+        Share URL: {shareURL}<br />
+      </div>
     )
   }
 }
@@ -144,9 +249,10 @@ class Upload extends React.Component {
 
     // Setup state to trigger conditional render and send data
     this.state = {
-      filename: "",
+      // filename: "",
+      imageID: 0,
       uploaded: false,
-      URL: ""
+      // URL: ""
     }
     // this is boilerplate that is necessary when a component has a helper
     // function other than one of the primary component methods.
@@ -170,29 +276,27 @@ class Upload extends React.Component {
         const formData = new FormData();
         formData.append('file', inputFile[0]);
         formData.append('ip', res.ip);
-        console.log(inputFile);
-        console.log(res.ip);
 
         // client is our REST api object for interracting with the server. It
         // passes data through 'entity'.
         client({
           method: 'POST',
-          path: '/api/upload',
+          path: '/api/images',
           entity: formData,
           headers: { 'Content-Type': 'multipart/form-data' }
         }).then(res => {
           // res.entity is the image object in JSON format
           console.log(res.entity);
-          const someURL = URL.createObjectURL(inputFile[0]);
-          console.log(someURL);
+          // const someURL = URL.createObjectURL(inputFile[0]);
+          // console.log(someURL);
 
-          this.setState({ filename: res.entity.filename });
-          this.setState({ uploaded: true });
-          this.setState({ URL: someURL });
-
-          // this is just for handy feedback. I expect that we won't have
-          // such an annoying feature in the finished product.
-          alert("File uploaded successfully.");
+          // this.setState({ filename: res.entity.filename });
+          // this.setState({ uploaded: true });
+          // this.setState({ URL: someURL });
+          this.setState({
+            imageID: res.entity.id,
+            uploaded: true,
+          });
         }).catch(err => console.log(err))
       }).catch(err => console.log(err));
   }
@@ -201,26 +305,28 @@ class Upload extends React.Component {
   // Dropzone handles file uploads in a drag and drop style. The look can be
   // modified by changing .fileDrop in src/main/resources/static/main.css
   render() {
-    // Conditional rendering flag to determine if to simply show text or image
-    // after upload
+    // Conditional rendering flag; redirect to image url after upload
     const isUploaded = this.state.uploaded;
+    const imageURL = '/share/' + this.state.imageID;
 
     return (
-      <Dropzone
-        accept="image/*"
-        onDrop={this.onFileDrop}>
-        {({ getRootProps, getInputProps }) => (
-          <section>
-            <div {...getRootProps()}>
-              <input {...getInputProps()} />
-              <div className='fileDrop'>
-                {!isUploaded && "Drag a file here or click to upload."}
-                {isUploaded && <Image filename={this.state.filename} path={this.state.URL}/>}
+      <div>
+        <Dropzone
+          accept="image/*"
+          onDrop={this.onFileDrop}>
+          {({ getRootProps, getInputProps }) => (
+            <section>
+              <div {...getRootProps()}>
+                <input {...getInputProps()} />
+                <div className='fileDrop'>
+                  Drag a file here or click to upload.
+                </div>
               </div>
-            </div>
-          </section>
-        )}
-      </Dropzone>
+            </section>
+          )}
+        </Dropzone>
+        {isUploaded && <Redirect to={imageURL} />}
+      </div>
     )
   }
 }
