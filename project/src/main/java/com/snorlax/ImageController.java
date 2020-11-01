@@ -62,6 +62,7 @@ public class ImageController {
       .body(response);
   }
 
+  // Get the first image blob in our database. This is just for testing.
   @GetMapping(value = "/api/images/test")
   public HttpEntity<byte[]> getFirstImage() {
     if (repository.count() == 0) {
@@ -74,6 +75,7 @@ public class ImageController {
       .body(images.getData());
   }
 
+  // Get the blob of this image.
   @GetMapping(value = "api/images/blob/{id}")
   public HttpEntity<byte[]> getBlob(@PathVariable Long id) {
     byte[] data = repository.findById(id)

@@ -63,6 +63,7 @@ import { BrowserRouter, Route, Switch, NavLink, useParams, Redirect }
 
 const root = '/api';
 
+// Route controller to the appropriate component
 class App extends React.Component {
   render() {
     return (
@@ -81,6 +82,7 @@ class App extends React.Component {
   }
 }
 
+// Test a static image display
 class Test extends React.Component {
   render() {
     const path = './data/images/cat.png';
@@ -94,6 +96,7 @@ class Test extends React.Component {
   }
 }
 
+// Test a dynamic image display
 class TestDynamic extends React.Component {
   constructor(props) {
     super(props);
@@ -195,18 +198,15 @@ class Image extends React.Component {
       const views = response.entity.views + 1;
 
       // Update views in server
-      // this could be done with PATCH, but I think it requires more work
-      // TODO: This needs to be implemented. This could be done by getting
-      // all of the state information from server and passing in a new
-      // object with PUT, or we could implement it with PATCH and it should
-      // work with just views, I think.
-      // client({
-      //   method: 'PUT',
-      //   path: response.entity._links.self.href,
-      //   entity: newState,
-      //   headers: {'Content-Type': 'application/json'}
-      // });
+      client({
+        method: 'PATCH',
+        path: response.entity._links.self.href,
+        entity: {views: views},
+        headers: {'Content-Type': 'application/json'}
+      });
 
+      // Get the blob from the server and use it to create the image URL,
+      // then set the state for URL and number of views.
       fetch('http://localhost:8080/api/images/blob/1')
         .then(response => {
           console.log(response);
