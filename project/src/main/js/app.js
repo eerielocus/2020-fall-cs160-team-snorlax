@@ -109,16 +109,19 @@ class TestDynamic extends React.Component {
   }
 
   componentDidMount() {
-    fetch('http://localhost:8080/api/images/test')
+    // fetch('http://localhost:8080/api/images/test')
+    fetch('http://localhost:8080/api/images/blob/1')
       .then(response => {
         console.log(response);
         response.blob().then(blob => {
           console.log(blob);
-          const url = URL.createObjectURL(blob);
-          console.log(url);
-          this.setState({
-            url: url
-          });
+          if (blob.size != 0) {
+            const url = URL.createObjectURL(blob);
+            console.log(url);
+            this.setState({
+              url: url
+            });
+          }
         });
       });
   }
@@ -165,8 +168,7 @@ function Share() {
 
   return (
     <div>
-      {/* {key} */}
-      <Image filename={key} />
+      <Image id={key} />
     </div>
   )
 }
@@ -174,22 +176,14 @@ function Share() {
 // Image component -- This should display the image, and also show other
 // information like number of views and the share link.
 //
-// This component requires the image key as a prop.
-//
 // you should create this component like so:
-// <Image key={img._links.self.href} />
-//
-// TODO: With the new changes, using blob instead of a filepath to a file on
-// the filesystem, this component needs a total overhaul.
+// <Image id={someID} />
 class Image extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      filename: "",
-      format: "",
-      uploaderIp: "",
-      timestamp: 0,
-      views: 0
+      views: 0,
+      url: ""
     }
   }
 
@@ -201,53 +195,54 @@ class Image extends React.Component {
   componentDidMount(){
     client({
       method: 'GET',
-      path: '../api/images/' + this.props.filename
+      path: '../api/images/' + this.props.id
     }).then(response=> {
       console.log(response);
-      const newState = {
-        format: response.entity.format,
-        uploaderIp: response.entity.uploaderIp,
-        timestamp: response.entity.timestamp,
-        views: response.entity.views + 1 // increment views
-      };
-
-      console.log(newState);
+      const views = response.entity.views + 1;
 
       // update views in server
       // this could be done with PATCH, but I think it requires more work
-      client({
-        method: 'PUT',
-        path: response.entity._links.self.href,
-        entity: newState,
-        headers: {'Content-Type': 'application/json'}
-      });
+      // TODO: This needs to be implemented. This could be done by getting
+      // all of the state information from server and passing in a new
+      // object with PUT, or we could implement it with PATCH and it should
+      // work with just views, I think.
+      // client({
+      //   method: 'PUT',
+      //   path: response.entity._links.self.href,
+      //   entity: newState,
+      //   headers: {'Content-Type': 'application/json'}
+      // });
 
-      return newState;
-
-    }).done(newState => {
-      // update our own state, which triggers a new render
-      this.setState(newState);
+      fetch('http://localhost:8080/api/images/blob/1')
+        .then(response => {
+          console.log(response);
+          response.blob().then(blob => {
+            console.log(blob);
+            if (blob.size != 0) {
+              const url = URL.createObjectURL(blob);
+              console.log(url);
+              this.setState({
+                views: views,
+                url: url
+              });
+            }
+          });
+        });
+    }).catch(error => {
+      console.log("An error has occurred!");
+      console.log(error);
     });
   }
 
   render() {
-    var display;
-    if (this.state.format !== "") {
-      // const filePath = "./" + this.props.filename + "." + this.state.format;
-      // const imageSrc = imagePath(filePath, true).default;
-      const imageSrc = '../'
-        + this.props.filename + "."
-        + "png";
-      display = <img src={imageSrc} />;
-    } else {
-      display = "";
-    }
-
-    // const catImage = imagePath('./cat.png', true).default;
+    const display = <img src={this.state.url} />;
+    const shareURL = 'http://localhost:8080/share/' + this.props.id;
 
     return (
       <div>
-        {display}
+        {display}<br />
+        Views: {this.state.views}<br />
+        Share URL: {shareURL}<br />
       </div>
     )
   }
