@@ -207,7 +207,7 @@ class Image extends React.Component {
 
       // Get the blob from the server and use it to create the image URL,
       // then set the state for URL and number of views.
-      fetch('http://localhost:8080/api/images/blob/1')
+      fetch('http://localhost:8080/api/images/blob/' + this.props.id)
         .then(response => {
           console.log(response);
           response.blob().then(blob => {
