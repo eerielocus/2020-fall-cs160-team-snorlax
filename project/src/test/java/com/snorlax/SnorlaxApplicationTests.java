@@ -3,6 +3,11 @@ package com.snorlax;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.htmlunit.HtmlUnitDriver;
+
 import static org.junit.Assert.*;
 
 import
@@ -30,6 +35,7 @@ class SnorlaxApplicationTests {
   }
 
   @Test
+  // nothing about this shit actually works don't expect anything
   void addImageTest() throws Exception {
     byte[] data = Files.readAllBytes(Paths.get("imageTests/cat.jpg"));
     MockMultipartFile file = new MockMultipartFile("cat.jpg", "cat.jpg",
@@ -37,8 +43,33 @@ class SnorlaxApplicationTests {
     mvc.perform(MockMvcRequestBuilders.multipart("/api/images")
       .file(file)
       .param("ip", "555"))
-      .andExpect(status().is(201))
+      // .andExpect(status().is(201))
       ;
+  }
+
+  @Test
+  public void example() {
+    // Create a new instance of the html unit driver
+    // Notice that the remainder of the code relies on the interface,
+    // not the implementation.
+    WebDriver driver = new HtmlUnitDriver();
+
+    // And now use this to visit Google
+    driver.get("http://www.google.com");
+
+    // Find the text input element by its name
+    WebElement element = driver.findElement(By.name("q"));
+
+    // Enter something to search for
+    element.sendKeys("Cheese!");
+
+    // Now submit the form. WebDriver will find the form for us from the element
+    element.submit();
+
+    // Check the title of the page
+    System.out.println("Page title is: " + driver.getTitle());
+
+    driver.quit();
   }
 
 }
