@@ -304,7 +304,7 @@ class Upload extends React.Component {
     const imageURL = '/share/' + this.state.imageID;
 
     return (
-      <div>
+      <div id='foo'>
         <Dropzone
           accept="image/*"
           onDrop={this.onFileDrop}>

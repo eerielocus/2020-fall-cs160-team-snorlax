@@ -80,20 +80,35 @@ class SnorlaxApplicationTests {
     WebDriver driver = new HtmlUnitDriver();
 
     // And now use this to visit Google
-    driver.get("http://reactdropzone.azurewebsites.net/example/");
+    driver.get("http://localhost:8080");
 
     // Find the text input element by its name
+    // WebElement element =
+    //   driver.findElement(By.cssSelector("input[type='file']"));
+
     WebElement element =
-      driver.findElement(By.cssSelector("input[type='file']"));
+      driver.findElement(By.cssSelector("div#react"));
 
-    // Enter something to search for
-    element.sendKeys("image.png");
+    // element.findElement(By.cssSelector("div#foo"));
 
-    // Now submit the form. WebDriver will find the form for us from the element
-    element.submit();
+    // WebElement element =
+    //   driver.findElement(By.xpath(".//div"));
+
+    var elements =
+      driver.findElements(By.xpath(".//div"));
+
+    // element.findElement(By.cssSelector("div"));
+
+    // // Enter something to search for
+    // element.sendKeys("image.png");
+
+    // // Now submit the form. WebDriver will find the form for us from the element
+    // element.submit();
 
     // Check the title of the page
     System.out.println("Page title is: " + driver.getTitle());
+    System.out.println("Page source is: " + driver.getPageSource());
+    System.out.println("Number of divs: " + elements.size());
 
     driver.quit();
   }
