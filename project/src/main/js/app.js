@@ -167,7 +167,7 @@ class Navigation extends React.Component {
             />
             Postcard
           </Navbar.Brand>
-          <NavLink to="#home">Upload</NavLink>
+          <NavLink to="/">Upload</NavLink>
         </Navbar>
       </div>
     )
