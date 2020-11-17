@@ -60,6 +60,8 @@ import Dropzone from 'react-dropzone';
 
 import { BrowserRouter, Route, Switch, NavLink, useParams, Redirect }
   from 'react-router-dom';
+import Navbar from 'react-bootstrap/Navbar';
+import postcard_small from '../../../../project/postcard_small.png';
 
 const root = '/api';
 
@@ -68,6 +70,7 @@ class App extends React.Component {
   render() {
     return (
       <BrowserRouter>
+        <Navigation/>
         <div>
           <Switch>
             <Route path="/" component={Upload} exact />
@@ -81,6 +84,7 @@ class App extends React.Component {
     )
   }
 }
+
 
 // Test a static image display
 class Test extends React.Component {
@@ -151,8 +155,20 @@ class Error extends React.Component {
 class Navigation extends React.Component {
   render() {
     return (
-      <div>
-        <NavLink to="/">Upload</NavLink>
+      <div className='navigation'>
+        <Navbar bg="dark" variant="dark">
+          <Navbar.Brand>
+          <img
+              src={postcard_small}
+              width="30"
+              height="30"
+              className="d-inline-block align-top"
+              alt="Postcard logo"
+            />
+            Postcard
+          </Navbar.Brand>
+          <NavLink to="#home">Upload</NavLink>
+        </Navbar>
       </div>
     )
   }
