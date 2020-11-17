@@ -1,4 +1,5 @@
-This is an automated test designed to check the functionality of the upload feature in the front-end.
+Front-end testing:
+This is an automated test designed to check the functionality of the upload feature.
 Created using Selenium package:
   - Requires the chromedriver.exe in order to use.
   - Runs on Java 14 and Chrome version 86.
