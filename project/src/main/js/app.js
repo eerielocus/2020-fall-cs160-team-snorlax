@@ -61,7 +61,7 @@ import Dropzone from 'react-dropzone';
 import { BrowserRouter, Route, Switch, NavLink, useParams, Redirect }
   from 'react-router-dom';
 import Navbar from 'react-bootstrap/Navbar';
-import postcard_small from '../../../../project/postcard_small.png';
+import postcardWhite from '../../../../project/postcardWhite.png';
 
 const root = '/api';
 
@@ -128,10 +128,12 @@ class TestDynamic extends React.Component {
   }
 
   render() {
+      
+    
     const display = <img src={this.state.url} />
 
     return (
-      <div>
+      <div class="img-uploaded">
         {display}
       </div>
     )
@@ -158,16 +160,22 @@ class Navigation extends React.Component {
       <div className='navigation'>
         <Navbar bg="dark" variant="dark">
           <Navbar.Brand>
+          
+         
           <img
-              src={postcard_small}
-              width="30"
-              height="30"
+              src={postcardWhite}
+              width="70"
+              height="42"
               className="d-inline-block align-top"
               alt="Postcard logo"
             />
+           
+            
             Postcard
           </Navbar.Brand>
-          <NavLink to="/">Upload</NavLink>
+         
+          <NavLink to="/">  <i class="fas fa-upload"></i> Upload</NavLink>
+           
         </Navbar>
       </div>
     )
@@ -249,7 +257,7 @@ class Image extends React.Component {
     const shareURL = 'http://localhost:8080/share/' + this.props.id;
 
     return (
-      <div>
+      <div class="img-uploaded">
         {display}<br />
         Views: {this.state.views}<br />
         Share URL: {shareURL}<br />
