@@ -128,8 +128,8 @@ class TestDynamic extends React.Component {
   }
 
   render() {
-      
-    
+
+
     const display = <img src={this.state.url} />
 
     return (
@@ -160,8 +160,8 @@ class Navigation extends React.Component {
       <div className='navigation'>
         <Navbar bg="dark" variant="dark">
           <Navbar.Brand>
-          
-         
+
+
           <img
               src={postcardWhite}
               width="70"
@@ -169,13 +169,15 @@ class Navigation extends React.Component {
               className="d-inline-block align-top"
               alt="Postcard logo"
             />
-           
-            
+
+
             Postcard
           </Navbar.Brand>
-         
-          <NavLink to="/">  <i class="fas fa-upload"></i> Upload</NavLink>
-           
+
+          <NavLink to="/" style={{marginLeft: '20px'}}>
+            <i class="fas fa-upload"></i> Upload
+          </NavLink>
+
         </Navbar>
       </div>
     )
