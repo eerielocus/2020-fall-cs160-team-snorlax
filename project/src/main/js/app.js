@@ -61,7 +61,7 @@ import Dropzone from 'react-dropzone';
 import { BrowserRouter, Route, Switch, NavLink, useParams, Redirect }
   from 'react-router-dom';
 import Navbar from 'react-bootstrap/Navbar';
-import postcardWhite from '../../../../project/postcardWhite.png';
+import postcardWhite from '../../../postcardWhite.png';
 
 const root = '/api';
 
