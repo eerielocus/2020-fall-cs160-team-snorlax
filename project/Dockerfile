@@ -37,4 +37,4 @@ EXPOSE 8080
 COPY . .
 
 # Run the command inside your image filesystem.
-RUN ./mvnw spring-boot:run
+#RUN ./mvnw spring-boot:run
