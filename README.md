@@ -11,6 +11,9 @@ For people who browse the internet who value an easy to upload, share and view c
 # Project Code
 Postcard's main code can be found in the directory /project/src/main/
 
+# Project Readme
+Main readme.md file for instructions on usage of Postcard is within the /project/ directory.
+
 # Project Testing
 Postcard's testcases utilizing Selenium and JUnit can be found under project/src/test/java/com/snorlax/SnorlaxApplicationTests.java
 
