@@ -19,3 +19,6 @@ Postcard's testcases utilizing Selenium and JUnit can be found under project/src
 
 # Initial Prototype
 An initial prototype to test Postcard's high level design using React, Spring Boot, and H2 Database can be found in the prototype directory. The functionality of the prototype is an example usage of the three components together and does not reflect Poostcard's functionality. Please refer to the Sept 27th commit for the prototype.
+
+# Docker Image
+Docker image file can be found under the /project/ directory.
