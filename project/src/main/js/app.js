@@ -178,6 +178,10 @@ class Navigation extends React.Component {
             <i class="fas fa-upload"></i> Upload
           </NavLink>
 
+          <a href="https://docs.google.com/document/d/13tGCSgwOp7LsqIhmcVZ5gZkGajOfSFcEWFylOc7ZgFY/edit?usp=sharing" target="_blank" style={{marginLeft: '20px'}}>
+            <i class="fa fa-question-circle" aria-hidden="true"></i> FAQs
+          </a>
+
         </Navbar>
       </div>
     )
